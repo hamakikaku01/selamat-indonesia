@@ -509,6 +509,61 @@ const maskEmail = (em) => {
   return (a.length <= 2 ? a[0] + "*" : a.slice(0, 2) + "***") + "@" + b;
 };
 
+/* CSVパーサー（引用符対応） */
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ",") { row.push(cur); cur = ""; }
+      else if (ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+      else if (ch === "\r") { /* skip */ }
+      else cur += ch;
+    }
+  }
+  row.push(cur);
+  rows.push(row);
+  return rows;
+}
+
+/* CSV行 → 単語アイテム */
+function csvToItems(text) {
+  const rows = parseCsv(text);
+  const items = [];
+  let skipped = 0;
+  const headerRe = /インドネシア|日本語|単語|意味|レベル|ind|jp|level/i;
+  for (const cols of rows) {
+    const a = (cols[0] || "").trim();
+    const b = (cols[1] || "").trim();
+    const c = (cols[2] || "").trim();
+    if (!a || !b) { skipped++; continue; }
+    if (headerRe.test(a) && headerRe.test(b)) { skipped++; continue; }
+    const lvRaw = c.toUpperCase();
+    const map = { "1": "E", "2": "D", "3": "C", "4": "B", E: "E", D: "D", C: "C", B: "B" };
+    const level = map[lvRaw] || "E";
+    items.push({ id: uid(), ind: a, jp: b, level, custom: true });
+  }
+  return { items, skipped };
+}
+
+/* GoogleスプレッドシートのURL → CSV取得用URL */
+function sheetCsvUrl(url) {
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!m) return null;
+  const gm = url.match(/[#&?]gid=(\d+)/);
+  const gid = gm ? gm[1] : "0";
+  return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
+}
+
+const LV_NUM = { E: "1", D: "2", C: "3", B: "4" };
+
 /* ================= スタイル ================= */
 
 const CSS = `
@@ -917,8 +972,14 @@ function AdminLogin({ admin, onSuccess, onBack }) {
 
 /* ================= 画面：問題管理 ================= */
 
-function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onRemove, onBack, storageOk }) {
+function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onImportJson, onRemove, onBack, storageOk }) {
   const [tab, setTab] = useState("import");
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [sheetTarget, setSheetTarget] = useState("vocab");
+  const [sheetMsg, setSheetMsg] = useState("");
+  const [sheetBusy, setSheetBusy] = useState(false);
+  const [backupMsg, setBackupMsg] = useState("");
+  const [copyMsg, setCopyMsg] = useState("");
   const [aEmail, setAEmail] = useState(admin.email);
   const [aPass, setAPass] = useState("");
   const [aMsg, setAMsg] = useState("");
@@ -973,6 +1034,85 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
     setGQ(""); setGHint(""); setGAns(""); setGD1(""); setGD2(""); setGD3(""); setGExp("");
   };
 
+  /* ---- JSONバックアップ ---- */
+  const doExportJson = () => {
+    const data = {
+      app: "selamat-indonesia",
+      exportedAt: new Date().toISOString(),
+      vocab: custom.vocab,
+      phrases: custom.phrases,
+      grammar: custom.grammar,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    a.href = URL.createObjectURL(blob);
+    a.download = `selamat-backup-${stamp}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setBackupMsg(`✅ バックアップファイルをダウンロードしました（単語${custom.vocab.length}・フレーズ${custom.phrases.length}・文法${custom.grammar.length}）`);
+  };
+
+  const doImportJsonFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!data || (!Array.isArray(data.vocab) && !Array.isArray(data.phrases) && !Array.isArray(data.grammar))) {
+          setBackupMsg("⚠️ このファイルはSelamat!のバックアップ形式ではないようです");
+          return;
+        }
+        const added = onImportJson(data);
+        setBackupMsg(`✅ ${added}件を復元しました！（すでにある問題はスキップ）`);
+      } catch (e) {
+        setBackupMsg("⚠️ ファイルを読み込めませんでした。JSONファイルか確認してね");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  /* ---- Googleスプレッドシート読み込み ---- */
+  const doSheetRead = async () => {
+    const csvUrl = sheetCsvUrl(sheetUrl.trim());
+    if (!csvUrl) {
+      setSheetMsg("⚠️ スプレッドシートのURLの形式が正しくないみたい。ブラウザのアドレスバーからそのままコピーしてね");
+      return;
+    }
+    setSheetBusy(true);
+    setSheetMsg("読み込み中…⏳");
+    try {
+      const res = await fetch(csvUrl);
+      if (!res.ok) throw new Error("fetch failed");
+      const text = await res.text();
+      if (text.trim().startsWith("<")) throw new Error("not public");
+      const { items, skipped } = csvToItems(text);
+      if (items.length === 0) {
+        setSheetMsg("⚠️ 読み取れる行がありませんでした。A列＝インドネシア語、B列＝日本語、C列＝レベル（1〜4、省略可）の並びか確認してね");
+      } else {
+        const added = onImport(items, sheetTarget);
+        setSheetMsg(`✅ シートから${added}件を登録しました！${items.length - added > 0 ? `（重複${items.length - added}件はスキップ）` : ""}${skipped > 0 ? `（読めない行${skipped}行はスキップ）` : ""}`);
+      }
+    } catch (e) {
+      setSheetMsg("⚠️ シートを読み込めませんでした。シートの「共有」→「リンクを知っている全員：閲覧者」になっているか確認してね");
+    }
+    setSheetBusy(false);
+  };
+
+  /* ---- シートへ書き戻す（コピー） ---- */
+  const doCopyTsv = async (target) => {
+    const list = target === "phrases" ? custom.phrases : custom.vocab;
+    if (!list.length) { setCopyMsg("⚠️ まだ登録がありません"); return; }
+    const tsv = list.map((v) => `${v.ind}\t${v.jp}\t${LV_NUM[v.level] || "1"}`).join("\n");
+    try {
+      await navigator.clipboard.writeText(tsv);
+      setCopyMsg(`✅ ${list.length}件をコピーしました！Googleスプレッドシートのセルを選んで貼り付け（Ctrl+V / ⌘V）してね`);
+    } catch (e) {
+      setCopyMsg("⚠️ コピーできませんでした。ブラウザの設定でクリップボードを許可してね");
+    }
+  };
+
   const totalCustom = custom.vocab.length + custom.grammar.length + custom.phrases.length;
 
   return (
@@ -989,7 +1129,7 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
       )}
 
       <div className="slm-chip-row" style={{ marginBottom: 12 }}>
-        {[["import", "📋 シート貼り付け"], ["word", "🍧 単語・フレーズ追加"], ["grammar", "🌿 文法を追加"], ["list", `📚 登録済み（${totalCustom}）`], ["csv", "📥 CSVダウンロード"], ["settings", "⚙️ 設定"]].map(([v, t]) => (
+        {[["import", "📋 シート貼り付け"], ["word", "🍧 単語・フレーズ追加"], ["grammar", "🌿 文法を追加"], ["list", `📚 登録済み（${totalCustom}）`], ["backup", "💾 バックアップ・シート連携"], ["csv", "📥 CSVダウンロード"], ["settings", "⚙️ 設定"]].map(([v, t]) => (
           <button key={v} className={`slm-chip sm ${tab === v ? "on" : ""}`} onClick={() => setTab(v)}>{t}</button>
         ))}
       </div>
@@ -1092,6 +1232,71 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
             </div>
           ))}
         </div>
+      )}
+
+      {tab === "backup" && (
+        <>
+          <div className="slm-card">
+            <div style={{ fontWeight: 900, fontSize: 15 }}>💾 JSONバックアップ（どの端末でも復元）</div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
+              マイ問題（単語・フレーズ・文法）をぜんぶ1つのファイルに保存します。別のスマホやパソコンでこのファイルを読み込めば、同じ内容を復元できるよ。
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <button className="slm-btn teal sm" onClick={doExportJson}>📤 バックアップをダウンロード</button>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label className="slm-btn sm" style={{ textAlign: "center", cursor: "pointer", background: "linear-gradient(135deg, #A08FFF, #7C68F0)", boxShadow: "0 6px 16px rgba(142,124,248,.35)" }}>
+                📥 バックアップファイルを読み込む
+                <input
+                  type="file" accept=".json,application/json" style={{ display: "none" }}
+                  onChange={(e) => { doImportJsonFile(e.target.files[0]); e.target.value = ""; }}
+                />
+              </label>
+            </div>
+            {backupMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: backupMsg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{backupMsg}</div>}
+          </div>
+
+          <div className="slm-card" style={{ marginTop: 14 }}>
+            <div style={{ fontWeight: 900, fontSize: 15 }}>📗 GoogleスプレッドシートのURLから読み込み</div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
+              シートのURLを貼るだけで、コピペなしで直接読み込めるよ。<br />
+              <b style={{ color: "var(--ink)" }}>準備：</b>シートの「共有」→「リンクを知っている全員：<b style={{ color: "var(--ink)" }}>閲覧者</b>」にしておいてね。<br />
+              <b style={{ color: "var(--ink)" }}>並び：</b>A列＝インドネシア語、B列＝日本語、C列＝レベル（1〜4、省略OK）
+            </div>
+            <div className="slm-label">🔗 シートのURL</div>
+            <input
+              className="slm-input" placeholder="https://docs.google.com/spreadsheets/d/…"
+              value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)}
+            />
+            <div className="slm-label">📥 登録先</div>
+            <div className="slm-chip-row">
+              {[["vocab", "🍧 単語として"], ["phrases", "🍹 熟語・フレーズとして"]].map(([v, t]) => (
+                <button key={v} className={`slm-chip sm ${sheetTarget === v ? "on" : ""}`} onClick={() => setSheetTarget(v)}>{t}</button>
+              ))}
+            </div>
+            {sheetMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: sheetMsg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{sheetMsg}</div>}
+            <div style={{ marginTop: 14 }}>
+              <button className="slm-btn teal sm" onClick={doSheetRead} disabled={sheetBusy || !sheetUrl.trim()}>
+                {sheetBusy ? "読み込み中…" : "シートから読み込む 📗"}
+              </button>
+            </div>
+          </div>
+
+          <div className="slm-card" style={{ marginTop: 14 }}>
+            <div style={{ fontWeight: 900, fontSize: 15 }}>📤 シートへ書き戻す（コピーして貼り付け）</div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
+              マイ問題をシート貼り付け用の形式（インドネシア語・日本語・レベルの3列）でコピーします。Googleスプレッドシートを開いてセルを選び、貼り付けるだけ。
+            </div>
+            <div className="slm-chip-row" style={{ marginTop: 14 }}>
+              <button className="slm-chip" onClick={() => doCopyTsv("vocab")}>🍧 マイ単語をコピー（{custom.vocab.length}）</button>
+              <button className="slm-chip" onClick={() => doCopyTsv("phrases")}>🍹 マイフレーズをコピー（{custom.phrases.length}）</button>
+            </div>
+            {copyMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: copyMsg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{copyMsg}</div>}
+            <div className="slm-note" style={{ marginTop: 10 }}>
+              ※文法問題はシート形式に収まらないため、JSONバックアップに含まれます
+            </div>
+          </div>
+        </>
       )}
 
       {tab === "csv" && (
@@ -1426,6 +1631,45 @@ export default function App() {
     return true;
   };
 
+  /* JSONバックアップからの一括復元（重複はスキップ） */
+  const importJson = (data) => {
+    let added = 0;
+    const next = { vocab: [...custom.vocab], phrases: [...custom.phrases], grammar: [...custom.grammar] };
+
+    const normalize = (it) => ({
+      ...it,
+      id: it.id || uid(),
+      custom: true,
+      level: LEVELS.includes(it.level) ? it.level : "E",
+    });
+
+    const addWords = (key, items, builtins) => {
+      if (!Array.isArray(items)) return;
+      const existing = new Set([...builtins, ...next[key]].map((v) => `${(v.ind || "").toLowerCase()}|${v.jp}`));
+      for (const raw of items) {
+        if (!raw || !raw.ind || !raw.jp) continue;
+        const it = normalize(raw);
+        const k = `${it.ind.toLowerCase()}|${it.jp}`;
+        if (!existing.has(k)) { existing.add(k); next[key].push(it); added++; }
+      }
+    };
+    addWords("vocab", data.vocab, VOCAB);
+    addWords("phrases", data.phrases, PHRASES);
+
+    if (Array.isArray(data.grammar)) {
+      const existing = new Set([...GRAMMAR, ...next.grammar].map((g) => `${g.q}|${g.answer}`));
+      for (const raw of data.grammar) {
+        if (!raw || !raw.q || !raw.answer || !Array.isArray(raw.choices)) continue;
+        const it = normalize(raw);
+        const k = `${it.q}|${it.answer}`;
+        if (!existing.has(k)) { existing.add(k); next.grammar.push(it); added++; }
+      }
+    }
+
+    setCustom(next);
+    return added;
+  };
+
   const removeItem = (kind, id) => {
     setCustom((c) => ({ ...c, [kind]: c[kind].filter((x) => x.id !== id) }));
   };
@@ -1449,7 +1693,7 @@ export default function App() {
         <AdminLogin
           admin={adminSettings}
           onSuccess={() => { setAdminAuthed(true); setScreen("manage"); }}
-          onBack={() => setScreen("home")Ayopergi ke Yokohama
+          onBack={() => setScreen("home")}
         />
       )}
       {screen === "setup" && (
@@ -1471,7 +1715,7 @@ export default function App() {
           custom={custom} pools={pools} storageOk={storageOk}
           admin={adminSettings} onSaveAdmin={setAdminSettings}
           onAddWord={addWord} onAddGrammar={addGrammar}
-          onImport={importWords} onRemove={removeItem}
+          onImport={importWords} onImportJson={importJson} onRemove={removeItem}
           onBack={() => setScreen("home")}
         />
       )}
