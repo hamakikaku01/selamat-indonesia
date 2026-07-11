@@ -695,6 +695,27 @@ function Home({ go, counts }) {
         収録：単語{counts.vocab}・フレーズ{counts.phrases}・文法{counts.grammar}・語形変化{AFFIX.length}・翻訳{SENTENCES.length}・並べ替え{ORDERS.length} ほか 🌴<br />
         {DISCLAIMER}
       </div>
+
+      <div className="slm-note" style={{ textAlign: "center", marginTop: 18, lineHeight: 2 }}>
+        <a href="https://ayopergike-yokohama.com/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--pink-deep)", fontWeight: 900, textDecoration: "none" }}>
+          🌏 Ayopergi ke Yokohama
+        </a>
+        <br />
+        X：
+        <a href="https://x.com/tomotana" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)", fontWeight: 700, textDecoration: "none" }}>
+          Tomohiko Tanaka
+        </a>
+        {" ／ "}
+        <a href="https://x.com/suka_jp" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)", fontWeight: 700, textDecoration: "none" }}>
+          IDN（アプリアップデートはこちら）
+        </a>
+        <br />
+        Copyright ©{" "}
+        <a href="https://hamakikaku.co.jp/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--muted)", fontWeight: 700, textDecoration: "underline" }}>
+          HAMAKIKAKU
+        </a>
+        , INC. All Rights Reserved.
+      </div>
     </div>
   );
 }
