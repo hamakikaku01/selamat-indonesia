@@ -225,7 +225,7 @@ const STORAGE_KEY = "selamat-custom-questions";
    メールで認証コードを送るには、EmailJS（無料）の3つのIDを下に入れます。
    未設定の間は「管理パスワード」でのログインのみ有効です。 */
 const DEFAULT_ADMIN = { email: "tanaka01@hamakikaku.biz", pass: "selamat2026" };
-const EMAILJS = { serviceId: "service_ewmidjy", templateId: "template_nlm2skn", publicKey: "FXOyrZmc8SqCd7rGx" };
+const EMAILJS = { serviceId: "service_inype85", templateId: "template_nlm2skn", publicKey: "FXOyrZmc8SqCd7rGx" };
 
 /* ================= ユーティリティ ================= */
 
