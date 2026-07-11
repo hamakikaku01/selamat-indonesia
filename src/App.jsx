@@ -220,6 +220,13 @@ const KIND_LABEL = {
 const DISCLAIMER = "レベル表記（Lv.1〜Lv.4）はインドネシア語技能検定（E〜B級）を目安にしたオリジナル基準です。本アプリは検定の公式アプリではありません。";
 const STORAGE_KEY = "selamat-custom-questions";
 
+/* ===== 管理者設定 =====
+   初期パスワードは必ず管理画面の「設定」タブから変更してください。
+   メールで認証コードを送るには、EmailJS（無料）の3つのIDを下に入れます。
+   未設定の間は「管理パスワード」でのログインのみ有効です。 */
+const DEFAULT_ADMIN = { email: "tanaka01@hamakikaku.biz", pass: "selamat2026" };
+const EMAILJS = { serviceId: "service_ewmidjy", templateId: "template_nlm2skn", publicKey: "FXOyrZmc8SqCd7rGx" };
+
 /* ================= ユーティリティ ================= */
 
 function shuffle(arr) {
@@ -458,6 +465,50 @@ function parsePaste(text) {
   return { items, skipped };
 }
 
+function buildWordsCsv(pools) {
+  const rows = [["種類", "インドネシア語", "日本語", "レベル", "登録元"]];
+  for (const v of pools.vocab) rows.push(["単語", v.ind, v.jp, `${LEVEL_INFO[v.level].name}(${LEVEL_INFO[v.level].sub})`, v.custom ? "マイ問題" : "内蔵"]);
+  for (const p of pools.phrases) rows.push(["熟語・フレーズ", p.ind, p.jp, `${LEVEL_INFO[p.level].name}(${LEVEL_INFO[p.level].sub})`, p.custom ? "マイ問題" : "内蔵"]);
+  const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
+  return "\uFEFF" + rows.map((r) => r.map(esc).join(",")).join("\r\n");
+}
+
+function downloadCsv(pools) {
+  const blob = new Blob([buildWordsCsv(pools)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "selamat-words.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+async function sendCodeByEmail(toEmail, code) {
+  if (!EMAILJS.serviceId || !EMAILJS.templateId || !EMAILJS.publicKey) return false;
+  try {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: EMAILJS.serviceId,
+        template_id: EMAILJS.templateId,
+        user_id: EMAILJS.publicKey,
+        template_params: { to_email: toEmail, code },
+      }),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+const maskEmail = (em) => {
+  const [a, b] = String(em).split("@");
+  if (!b) return em;
+  return (a.length <= 2 ? a[0] + "*" : a.slice(0, 2) + "***") + "@" + b;
+};
+
 /* ================= スタイル ================= */
 
 const CSS = `
@@ -628,13 +679,13 @@ function Home({ go, counts }) {
         </div>
       </button>
 
-      <button className="slm-mode-card" onClick={() => go("manage")} style={{ borderColor: "#CDEFE5" }}>
+      <button className="slm-mode-card" onClick={() => go("adminLogin")} style={{ borderColor: "#CDEFE5" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ fontSize: 34 }}>✏️</div>
+          <div style={{ fontSize: 34 }}>🔐</div>
           <div>
-            <div style={{ fontWeight: 900, fontSize: 18, color: "var(--teal)" }}>問題を追加・管理</div>
+            <div style={{ fontWeight: 900, fontSize: 18, color: "var(--teal)" }}>管理画面</div>
             <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3, lineHeight: 1.6 }}>
-              単語・熟語フレーズ・文法問題を登録。スプレッドシート貼り付けもOK
+              問題の追加・単語一覧のCSVダウンロード（管理者パスワードが必要です）
             </div>
           </div>
         </div>
@@ -771,10 +822,85 @@ function MockSetup({ mockLevel, setMockLevel, onStart, onBack }) {
   );
 }
 
+/* ================= 画面：管理者ログイン ================= */
+
+function AdminLogin({ admin, onSuccess, onBack }) {
+  const [input, setInput] = useState("");
+  const [sentCode, setSentCode] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const sendCode = async () => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setSending(true);
+    const ok = await sendCodeByEmail(admin.email, code);
+    setSending(false);
+    if (ok) {
+      setSentCode(code);
+      setMsg(`✅ ${maskEmail(admin.email)} に6桁の認証コードを送りました。届いたコードを下に入力してね（数分待っても届かない場合は迷惑メールも確認）`);
+    } else {
+      setMsg("⚠️ メール送信は現在未設定です。管理パスワードを入力してログインしてください。（メール認証を使うにはEmailJSの設定が必要です）");
+    }
+  };
+
+  const login = () => {
+    const val = input.trim();
+    if ((sentCode && val === sentCode) || val === admin.pass) {
+      setMsg("");
+      setInput("");
+      onSuccess();
+    } else {
+      setMsg("❌ コードまたはパスワードが違います");
+    }
+  };
+
+  return (
+    <div className="slm-wrap">
+      <div style={{ padding: "22px 0 14px" }}>
+        <div className="slm-eyebrow" style={{ color: "var(--teal)" }}>Admin Login</div>
+        <h1 className="slm-h1" style={{ fontSize: 24 }}>管理者ログイン 🔐</h1>
+      </div>
+      <div className="slm-card">
+        <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)" }}>
+          この先は管理者専用です。登録メールアドレス（{maskEmail(admin.email)}）宛の認証コード、または管理パスワードでログインしてください。
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <button className="slm-btn teal sm" onClick={sendCode} disabled={sending}>
+            {sending ? "送信中…" : "📧 認証コードをメールで送る"}
+          </button>
+        </div>
+
+        <div className="slm-label">🔑 認証コード または 管理パスワード</div>
+        <input
+          className="slm-input" type="password" placeholder="ここに入力"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") login(); }}
+        />
+        {msg && (
+          <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: msg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>
+            {msg}
+          </div>
+        )}
+
+        <div style={{ marginTop: 18 }}>
+          <button className="slm-btn" onClick={login} disabled={!input.trim()}>ログイン</button>
+          <div style={{ height: 10 }} />
+          <button className="slm-ghost" onClick={onBack}>← もどる</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================= 画面：問題管理 ================= */
 
-function Manage({ custom, onAddWord, onAddGrammar, onImport, onRemove, onBack, storageOk }) {
+function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onRemove, onBack, storageOk }) {
   const [tab, setTab] = useState("import");
+  const [aEmail, setAEmail] = useState(admin.email);
+  const [aPass, setAPass] = useState("");
+  const [aMsg, setAMsg] = useState("");
   const [pasteText, setPasteText] = useState("");
   const [pasteTarget, setPasteTarget] = useState("vocab");
   const [pasteMsg, setPasteMsg] = useState("");
@@ -831,18 +957,18 @@ function Manage({ custom, onAddWord, onAddGrammar, onImport, onRemove, onBack, s
   return (
     <div className="slm-wrap">
       <div style={{ padding: "22px 0 14px" }}>
-        <div className="slm-eyebrow" style={{ color: "var(--teal)" }}>My Questions</div>
-        <h1 className="slm-h1" style={{ fontSize: 24 }}>問題を追加・管理 ✏️</h1>
+        <div className="slm-eyebrow" style={{ color: "var(--teal)" }}>Admin</div>
+        <h1 className="slm-h1" style={{ fontSize: 24 }}>管理画面 🔧</h1>
       </div>
 
       {!storageOk && (
         <div style={{ fontSize: 12, color: "var(--pink-deep)", fontWeight: 700, marginBottom: 10, lineHeight: 1.7 }}>
-          ⚠️ この環境では保存機能が使えないため、追加した問題はこの画面を開いている間だけ有効です
+          ⚠️ この環境では保存機能が使えないため、追加した問題・設定はこの画面を開いている間だけ有効です
         </div>
       )}
 
       <div className="slm-chip-row" style={{ marginBottom: 12 }}>
-        {[["import", "📋 シート貼り付け"], ["word", "🍧 単語・フレーズ追加"], ["grammar", "🌿 文法を追加"], ["list", `📚 登録済み（${totalCustom}）`]].map(([v, t]) => (
+        {[["import", "📋 シート貼り付け"], ["word", "🍧 単語・フレーズ追加"], ["grammar", "🌿 文法を追加"], ["list", `📚 登録済み（${totalCustom}）`], ["csv", "📥 CSVダウンロード"], ["settings", "⚙️ 設定"]].map(([v, t]) => (
           <button key={v} className={`slm-chip sm ${tab === v ? "on" : ""}`} onClick={() => setTab(v)}>{t}</button>
         ))}
       </div>
@@ -944,6 +1070,50 @@ function Manage({ custom, onAddWord, onAddGrammar, onImport, onRemove, onBack, s
               <button className="slm-del" onClick={() => onRemove("grammar", g.id)} aria-label="削除">✕</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === "csv" && (
+        <div className="slm-card">
+          <div style={{ fontWeight: 900, fontSize: 15 }}>📥 単語一覧のCSVダウンロード</div>
+          <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
+            登録されているすべての単語・熟語フレーズ（内蔵＋マイ問題）を、日本語とインドネシア語のペアでCSVファイルに書き出します。ExcelやGoogleスプレッドシートでそのまま開けます。
+          </div>
+          <div style={{ fontSize: 13, marginTop: 12, fontWeight: 700 }}>
+            収録内容：単語 {pools.vocab.length}件　・　熟語・フレーズ {pools.phrases.length}件
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <button className="slm-btn teal sm" onClick={() => downloadCsv(pools)}>CSVをダウンロードする 📥</button>
+          </div>
+        </div>
+      )}
+
+      {tab === "settings" && (
+        <div className="slm-card">
+          <div style={{ fontWeight: 900, fontSize: 15 }}>⚙️ 管理者設定</div>
+          <div className="slm-label">📧 管理者メールアドレス（認証コードの送り先）</div>
+          <input className="slm-input" type="email" placeholder="例：admin@example.com" value={aEmail} onChange={(e) => setAEmail(e.target.value)} />
+          <div className="slm-label">🔑 管理パスワードの変更（空欄なら変更しない）</div>
+          <input className="slm-input" type="password" placeholder="新しいパスワード" value={aPass} onChange={(e) => setAPass(e.target.value)} />
+          <div className="slm-note" style={{ marginTop: 10 }}>
+            ※初期パスワードのままの場合は、必ずここで変更してください
+          </div>
+          {aMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, color: aMsg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{aMsg}</div>}
+          <div style={{ marginTop: 16 }}>
+            <button
+              className="slm-btn teal sm"
+              onClick={() => {
+                const email = aEmail.trim();
+                if (!email.includes("@")) { setAMsg("⚠️ メールアドレスの形式を確認してね"); return; }
+                if (aPass && aPass.trim().length < 6) { setAMsg("⚠️ パスワードは6文字以上にしてね"); return; }
+                onSaveAdmin({ email, pass: aPass.trim() || admin.pass });
+                setAPass("");
+                setAMsg("✅ 設定を保存しました！");
+              }}
+            >
+              設定を保存する 💾
+            </button>
+          </div>
         </div>
       )}
 
@@ -1133,6 +1303,8 @@ export default function App() {
   const [answers, setAnswers] = useState([]);
   const [startTime, setStartTime] = useState(0);
   const [custom, setCustom] = useState({ vocab: [], grammar: [], phrases: [] });
+  const [adminSettings, setAdminSettings] = useState(DEFAULT_ADMIN);
+  const [adminAuthed, setAdminAuthed] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
@@ -1153,6 +1325,9 @@ export default function App() {
       if (raw) {
         const data = JSON.parse(raw);
         setCustom({ vocab: data.vocab || [], grammar: data.grammar || [], phrases: data.phrases || [] });
+        if (data.admin && data.admin.email && data.admin.pass) {
+          setAdminSettings({ ...DEFAULT_ADMIN, ...data.admin });
+        }
       }
     } catch (e) {
       setStorageOk(false);
@@ -1163,11 +1338,11 @@ export default function App() {
   useEffect(() => {
     if (!loaded || !storageOk) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...custom, admin: adminSettings }));
     } catch (e) {
       setStorageOk(false);
     }
-  }, [custom, loaded, storageOk]);
+  }, [custom, adminSettings, loaded, storageOk]);
 
   const pools = {
     vocab: [...VOCAB, ...custom.vocab],
@@ -1240,10 +1415,22 @@ export default function App() {
     phrases: pools.phrases.length,
   };
 
+  const go = (s) => {
+    if (s === "adminLogin" && adminAuthed) setScreen("manage");
+    else setScreen(s);
+  };
+
   return (
     <div className="slm-root">
       <style>{CSS}</style>
-      {screen === "home" && <Home go={setScreen} counts={counts} />}
+      {screen === "home" && <Home go={go} counts={counts} />}
+      {screen === "adminLogin" && (
+        <AdminLogin
+          admin={adminSettings}
+          onSuccess={() => { setAdminAuthed(true); setScreen("manage"); }}
+          onBack={() => setScreen("home")}
+        />
+      )}
       {screen === "setup" && (
         <Setup
           settings={settings} setSettings={setSettings} pools={pools}
@@ -1260,7 +1447,8 @@ export default function App() {
       )}
       {screen === "manage" && (
         <Manage
-          custom={custom} storageOk={storageOk}
+          custom={custom} pools={pools} storageOk={storageOk}
+          admin={adminSettings} onSaveAdmin={setAdminSettings}
           onAddWord={addWord} onAddGrammar={addGrammar}
           onImport={importWords} onRemove={removeItem}
           onBack={() => setScreen("home")}
