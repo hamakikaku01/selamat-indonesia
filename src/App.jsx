@@ -1449,7 +1449,7 @@ export default function App() {
         <AdminLogin
           admin={adminSettings}
           onSuccess={() => { setAdminAuthed(true); setScreen("manage"); }}
-          onBack={() => setScreen("home")}
+          onBack={() => setScreen("home")Ayopergi ke Yokohama
         />
       )}
       {screen === "setup" && (
