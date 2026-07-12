@@ -219,6 +219,9 @@ const KIND_LABEL = {
 };
 const DISCLAIMER = "レベル表記（Lv.1〜Lv.4）はインドネシア語技能検定（E〜B級）を目安にしたオリジナル基準です。本アプリは検定の公式アプリではありません。";
 const STORAGE_KEY = "selamat-custom-questions";
+const SHEET_KEY = "selamat-sheet-config";
+/* ↓あなたのスプレッドシートURL（初期設定として全端末で使われます） */
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1XOK_MwHqulF93VKql2ernEX1HK25mO1d7bqEgshFFys/edit?gid=199152471";
 
 /* ===== 管理者設定 =====
    初期パスワードは必ず管理画面の「設定」タブから変更してください。
@@ -972,11 +975,10 @@ function AdminLogin({ admin, onSuccess, onBack }) {
 
 /* ================= 画面：問題管理 ================= */
 
-function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onImportJson, onRemove, onBack, storageOk }) {
+function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onImportJson, onRemove, onBack, storageOk, sheetConfig, onSaveSheetConfig, onSyncSheet, sheetStatus, sheetCount }) {
   const [tab, setTab] = useState("import");
-  const [sheetUrl, setSheetUrl] = useState("");
-  const [sheetTarget, setSheetTarget] = useState("vocab");
-  const [sheetMsg, setSheetMsg] = useState("");
+  const [sheetUrl, setSheetUrl] = useState(sheetConfig.url || "");
+  const [sheetTarget, setSheetTarget] = useState(sheetConfig.target || "vocab");
   const [sheetBusy, setSheetBusy] = useState(false);
   const [backupMsg, setBackupMsg] = useState("");
   const [copyMsg, setCopyMsg] = useState("");
@@ -1073,30 +1075,16 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
     reader.readAsText(file);
   };
 
-  /* ---- Googleスプレッドシート読み込み ---- */
-  const doSheetRead = async () => {
-    const csvUrl = sheetCsvUrl(sheetUrl.trim());
-    if (!csvUrl) {
-      setSheetMsg("⚠️ スプレッドシートのURLの形式が正しくないみたい。ブラウザのアドレスバーからそのままコピーしてね");
-      return;
-    }
+  /* ---- Googleスプレッドシート自動同期の設定 ---- */
+  const doSheetSave = async () => {
     setSheetBusy(true);
-    setSheetMsg("読み込み中…⏳");
-    try {
-      const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error("fetch failed");
-      const text = await res.text();
-      if (text.trim().startsWith("<")) throw new Error("not public");
-      const { items, skipped } = csvToItems(text);
-      if (items.length === 0) {
-        setSheetMsg("⚠️ 読み取れる行がありませんでした。A列＝インドネシア語、B列＝日本語、C列＝レベル（1〜4、省略可）の並びか確認してね");
-      } else {
-        const added = onImport(items, sheetTarget);
-        setSheetMsg(`✅ シートから${added}件を登録しました！${items.length - added > 0 ? `（重複${items.length - added}件はスキップ）` : ""}${skipped > 0 ? `（読めない行${skipped}行はスキップ）` : ""}`);
-      }
-    } catch (e) {
-      setSheetMsg("⚠️ シートを読み込めませんでした。シートの「共有」→「リンクを知っている全員：閲覧者」になっているか確認してね");
-    }
+    await onSaveSheetConfig({ url: sheetUrl.trim(), target: sheetTarget, auto: true });
+    setSheetBusy(false);
+  };
+
+  const doSheetSync = async () => {
+    setSheetBusy(true);
+    await onSyncSheet();
     setSheetBusy(false);
   };
 
@@ -1257,28 +1245,40 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
           </div>
 
           <div className="slm-card" style={{ marginTop: 14 }}>
-            <div style={{ fontWeight: 900, fontSize: 15 }}>📗 GoogleスプレッドシートのURLから読み込み</div>
+            <div style={{ fontWeight: 900, fontSize: 15 }}>📗 Googleシート自動同期（全端末で共通）</div>
             <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
-              シートのURLを貼るだけで、コピペなしで直接読み込めるよ。<br />
-              <b style={{ color: "var(--ink)" }}>準備：</b>シートの「共有」→「リンクを知っている全員：<b style={{ color: "var(--ink)" }}>閲覧者</b>」にしておいてね。<br />
+              ここで設定したシートを、<b style={{ color: "var(--ink)" }}>アプリを開くたびに自動で読み込みます</b>。シートに単語を追加すれば、パソコンでもスマホでも次に開いたとき同じ単語が使えるよ。シートが「みんな共通の単語帳」になるイメージ！<br />
+              <b style={{ color: "var(--ink)" }}>準備：</b>シートの「共有」→「リンクを知っている全員：<b style={{ color: "var(--ink)" }}>閲覧者</b>」<br />
               <b style={{ color: "var(--ink)" }}>並び：</b>A列＝インドネシア語、B列＝日本語、C列＝レベル（1〜4、省略OK）
             </div>
-            <div className="slm-label">🔗 シートのURL</div>
+            {sheetStatus && (
+              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: sheetStatus.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>
+                {sheetStatus}{sheetStatus.startsWith("✅") ? "" : ""}
+              </div>
+            )}
+            <div className="slm-label">🔗 同期するシートのURL</div>
             <input
               className="slm-input" placeholder="https://docs.google.com/spreadsheets/d/…"
               value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)}
             />
-            <div className="slm-label">📥 登録先</div>
+            <div className="slm-label">📥 シートの単語のあつかい</div>
             <div className="slm-chip-row">
-              {[["vocab", "🍧 単語として"], ["phrases", "🍹 熟語・フレーズとして"]].map(([v, t]) => (
+              {[["vocab", "🍧 単語として出題"], ["phrases", "🍹 熟語・フレーズとして出題"]].map(([v, t]) => (
                 <button key={v} className={`slm-chip sm ${sheetTarget === v ? "on" : ""}`} onClick={() => setSheetTarget(v)}>{t}</button>
               ))}
             </div>
-            {sheetMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: sheetMsg.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{sheetMsg}</div>}
             <div style={{ marginTop: 14 }}>
-              <button className="slm-btn teal sm" onClick={doSheetRead} disabled={sheetBusy || !sheetUrl.trim()}>
-                {sheetBusy ? "読み込み中…" : "シートから読み込む 📗"}
+              <button className="slm-btn teal sm" onClick={doSheetSave} disabled={sheetBusy || !sheetUrl.trim()}>
+                {sheetBusy ? "同期中…" : "この設定を保存して同期する 💾"}
               </button>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <button className="slm-ghost" onClick={doSheetSync} disabled={sheetBusy || !sheetConfig.url}>
+                🔄 いま手動で同期する（現在 {sheetCount} 件）
+              </button>
+            </div>
+            <div className="slm-note" style={{ marginTop: 10 }}>
+              ※シート同期の単語はシートが本体なので、削除・修正はシート側で行ってね（アプリの登録済みリストからは消せません）。アプリ内で直接登録したマイ問題を他の端末へ移すときは、上のJSONバックアップを使ってね。
             </div>
           </div>
 
@@ -1570,10 +1570,84 @@ export default function App() {
     }
   }, [custom, adminSettings, loaded, storageOk]);
 
+  /* ---- Googleシート自動同期 ---- */
+  const [sheetConfig, setSheetConfig] = useState({ url: DEFAULT_SHEET_URL, target: "vocab", auto: true });
+  const [sheetWords, setSheetWords] = useState([]);
+  const [sheetStatus, setSheetStatus] = useState("");
+  const [sheetLoaded, setSheetLoaded] = useState(false);
+
+  const syncSheet = async (cfg) => {
+    const c = cfg || sheetConfig;
+    if (!c.url || !c.url.trim()) {
+      setSheetWords([]);
+      setSheetStatus("");
+      return { ok: false, msg: "URLが設定されていません" };
+    }
+    const csvUrl = sheetCsvUrl(c.url.trim());
+    if (!csvUrl) {
+      setSheetStatus("⚠️ URLの形式が正しくないみたい");
+      return { ok: false, msg: "URLの形式が正しくない" };
+    }
+    setSheetStatus("同期中…⏳");
+    try {
+      const res = await fetch(csvUrl);
+      if (!res.ok) throw new Error("fetch failed");
+      const text = await res.text();
+      if (text.trim().startsWith("<")) throw new Error("not public");
+      const { items } = csvToItems(text);
+      const words = items.map((it) => ({ ...it, custom: true, fromSheet: true }));
+      setSheetWords(words);
+      const now = new Date();
+      const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+      setSheetStatus(`✅ シートと同期済み（${words.length}件・${t}）`);
+      return { ok: true, count: words.length };
+    } catch (e) {
+      setSheetStatus("⚠️ シートを読めませんでした。「共有」→「リンクを知っている全員：閲覧者」になっているか確認してね");
+      return { ok: false, msg: "読み込み失敗" };
+    }
+  };
+
+  // 起動時：保存された同期設定を読み込んで自動同期
+  useEffect(() => {
+    let cfg = { url: DEFAULT_SHEET_URL, target: "vocab", auto: true };
+    try {
+      const raw = window.localStorage && window.localStorage.getItem(SHEET_KEY);
+      if (raw) cfg = { ...cfg, ...JSON.parse(raw) };
+    } catch (e) { /* 既定値を使用 */ }
+    setSheetConfig(cfg);
+    setSheetLoaded(true);
+    if (cfg.auto && cfg.url) syncSheet(cfg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 同期設定の保存
+  useEffect(() => {
+    if (!sheetLoaded) return;
+    try {
+      window.localStorage.setItem(SHEET_KEY, JSON.stringify(sheetConfig));
+    } catch (e) { /* 保存不可でも動作は継続 */ }
+  }, [sheetConfig, sheetLoaded]);
+
+  const saveSheetConfig = (cfg) => {
+    setSheetConfig(cfg);
+    return syncSheet(cfg);
+  };
+
+  /* 単語の重複を除いて結合（内蔵・マイ・シートの順で優先） */
+  const mergeWords = (base, extra) => {
+    const seen = new Set(base.map((v) => `${(v.ind || "").toLowerCase()}|${v.jp}`));
+    const out = [...base];
+    for (const v of extra) {
+      const k = `${(v.ind || "").toLowerCase()}|${v.jp}`;
+      if (!seen.has(k)) { seen.add(k); out.push(v); }
+    }
+    return out;
+  };
+
   const pools = {
-    vocab: [...VOCAB, ...custom.vocab],
+    vocab: mergeWords([...VOCAB, ...custom.vocab], sheetConfig.target === "vocab" ? sheetWords : []),
     grammar: [...GRAMMAR, ...custom.grammar],
-    phrases: [...PHRASES, ...custom.phrases],
+    phrases: mergeWords([...PHRASES, ...custom.phrases], sheetConfig.target === "phrases" ? sheetWords : []),
   };
 
   const start = (questions, isMock, target) => {
@@ -1716,6 +1790,8 @@ export default function App() {
           admin={adminSettings} onSaveAdmin={setAdminSettings}
           onAddWord={addWord} onAddGrammar={addGrammar}
           onImport={importWords} onImportJson={importJson} onRemove={removeItem}
+          sheetConfig={sheetConfig} onSaveSheetConfig={saveSheetConfig}
+          onSyncSheet={() => syncSheet()} sheetStatus={sheetStatus} sheetCount={sheetWords.length}
           onBack={() => setScreen("home")}
         />
       )}
