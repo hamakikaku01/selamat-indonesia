@@ -153,20 +153,76 @@ const AFFIX = [
 
 /* 文の翻訳（イ⇔日） */
 const SENTENCES = [
-  { level: "E", ind: "Saya makan nasi goreng.", jp: "私はナシゴレンを食べます。" },
-  { level: "E", ind: "Dia pergi ke sekolah setiap hari.", jp: "彼は毎日学校へ行きます。" },
-  { level: "E", ind: "Rumah saya kecil tapi bersih.", jp: "私の家は小さいけれどきれいです。" },
-  { level: "E", ind: "Ini teman saya dari Jepang.", jp: "こちらは日本から来た私の友達です。" },
-  { level: "D", ind: "Saya sudah membeli tiket kemarin.", jp: "私は昨日チケットを買いました。" },
-  { level: "D", ind: "Besok kami akan berangkat ke Bali.", jp: "明日私たちはバリへ出発します。" },
-  { level: "D", ind: "Cuaca hari ini sangat panas.", jp: "今日の天気はとても暑いです。" },
-  { level: "D", ind: "Dia sedang belajar bahasa Jepang di kamar.", jp: "彼は部屋で日本語を勉強しているところです。" },
-  { level: "C", ind: "Jumlah penduduk kota ini terus meningkat.", jp: "この町の人口は増え続けています。" },
-  { level: "C", ind: "Perusahaan itu memberikan kesempatan kepada karyawan muda.", jp: "その会社は若い社員にチャンスを与えています。" },
-  { level: "C", ind: "Masalah lingkungan menjadi topik penting di masyarakat.", jp: "環境問題は社会で重要なテーマになっています。" },
-  { level: "B", ind: "Pemerintah berupaya mengurangi ketimpangan ekonomi antara kota dan desa.", jp: "政府は都市と農村の経済格差を縮小しようと努めています。" },
-  { level: "B", ind: "Investasi di bidang pendidikan sangat penting untuk pembangunan berkelanjutan.", jp: "教育分野への投資は持続可能な発展のためにとても重要です。" },
-  { level: "B", ind: "Kebijakan baru itu menimbulkan dampak besar terhadap dunia usaha.", jp: "その新政策はビジネス界に大きな影響を与えました。" },
+  {
+    level: "E", ind: "Saya makan nasi goreng.", jp: "私はナシゴレンを食べます。",
+    jpX: ["私はナシゴレンを作ります。", "私はナシゴレンが好きではありません。", "彼はナシゴレンを食べます。"],
+    indX: ["Saya membuat nasi goreng.", "Saya mau makan nasi goreng.", "Dia makan nasi goreng."],
+  },
+  {
+    level: "E", ind: "Dia pergi ke sekolah setiap hari.", jp: "彼は毎日学校へ行きます。",
+    jpX: ["彼は毎日学校から帰ります。", "私は毎日学校へ行きます。", "彼はときどき学校へ行きます。"],
+    indX: ["Dia pulang dari sekolah setiap hari.", "Saya pergi ke sekolah setiap hari.", "Dia kadang-kadang pergi ke sekolah."],
+  },
+  {
+    level: "E", ind: "Rumah saya kecil tapi bersih.", jp: "私の家は小さいけれどきれいです。",
+    jpX: ["私の家は大きくてきれいです。", "私の家は小さくて汚いです。", "彼の家は小さいけれどきれいです。"],
+    indX: ["Rumah saya besar dan bersih.", "Rumah saya kecil dan kotor.", "Rumah dia kecil tapi bersih."],
+  },
+  {
+    level: "E", ind: "Ini teman saya dari Jepang.", jp: "こちらは日本から来た私の友達です。",
+    jpX: ["こちらは日本へ行く私の友達です。", "こちらはインドネシアから来た私の友達です。", "私の友達は日本にいます。"],
+    indX: ["Ini teman saya yang mau ke Jepang.", "Ini teman saya dari Indonesia.", "Teman saya ada di Jepang."],
+  },
+  {
+    level: "D", ind: "Saya sudah membeli tiket kemarin.", jp: "私は昨日チケットを買いました。",
+    jpX: ["私は明日チケットを買うつもりです。", "私はまだチケットを買っていません。", "彼は昨日チケットを売りました。"],
+    indX: ["Saya akan membeli tiket besok.", "Saya belum membeli tiket.", "Dia menjual tiket kemarin."],
+  },
+  {
+    level: "D", ind: "Besok kami akan berangkat ke Bali.", jp: "明日私たちはバリへ出発します。",
+    jpX: ["昨日私たちはバリへ出発しました。", "明日私たちはバリから帰ります。", "明日彼らはバリへ出発します。"],
+    indX: ["Kemarin kami berangkat ke Bali.", "Besok kami akan pulang dari Bali.", "Besok mereka akan berangkat ke Bali."],
+  },
+  {
+    level: "D", ind: "Cuaca hari ini sangat panas.", jp: "今日の天気はとても暑いです。",
+    jpX: ["今日の天気はとても寒いです。", "昨日の天気はとても暑かったです。", "今日の天気は少し暑いです。"],
+    indX: ["Cuaca hari ini sangat dingin.", "Cuaca kemarin sangat panas.", "Cuaca hari ini agak panas."],
+  },
+  {
+    level: "D", ind: "Dia sedang belajar bahasa Jepang di kamar.", jp: "彼は部屋で日本語を勉強しているところです。",
+    jpX: ["彼は部屋で日本語を教えているところです。", "彼はもう日本語の勉強を終えました。", "彼は学校で日本語を勉強しているところです。"],
+    indX: ["Dia sedang mengajar bahasa Jepang di kamar.", "Dia sudah selesai belajar bahasa Jepang.", "Dia sedang belajar bahasa Jepang di sekolah."],
+  },
+  {
+    level: "C", ind: "Jumlah penduduk kota ini terus meningkat.", jp: "この町の人口は増え続けています。",
+    jpX: ["この町の人口は減り続けています。", "この国の人口は増え続けています。", "この町の人口は去年増えました。"],
+    indX: ["Jumlah penduduk kota ini terus menurun.", "Jumlah penduduk negara ini terus meningkat.", "Jumlah penduduk kota ini meningkat tahun lalu."],
+  },
+  {
+    level: "C", ind: "Perusahaan itu memberikan kesempatan kepada karyawan muda.", jp: "その会社は若い社員にチャンスを与えています。",
+    jpX: ["その会社は若い社員からチャンスを奪っています。", "その会社はベテラン社員にチャンスを与えています。", "若い社員がその会社にチャンスを与えています。"],
+    indX: ["Perusahaan itu mengambil kesempatan dari karyawan muda.", "Perusahaan itu memberikan kesempatan kepada karyawan senior.", "Karyawan muda memberikan kesempatan kepada perusahaan itu."],
+  },
+  {
+    level: "C", ind: "Masalah lingkungan menjadi topik penting di masyarakat.", jp: "環境問題は社会で重要なテーマになっています。",
+    jpX: ["環境問題は社会であまり注目されていません。", "経済問題は社会で重要なテーマになっています。", "環境問題は学校で重要なテーマになっています。"],
+    indX: ["Masalah lingkungan kurang diperhatikan di masyarakat.", "Masalah ekonomi menjadi topik penting di masyarakat.", "Masalah lingkungan menjadi topik penting di sekolah."],
+  },
+  {
+    level: "B", ind: "Pemerintah berupaya mengurangi ketimpangan ekonomi antara kota dan desa.", jp: "政府は都市と農村の経済格差を縮小しようと努めています。",
+    jpX: ["政府は都市と農村の経済格差を拡大しようとしています。", "企業は都市と農村の経済格差を縮小しようと努めています。", "政府は都市と農村の文化の違いを縮小しようと努めています。"],
+    indX: ["Pemerintah berupaya memperbesar ketimpangan ekonomi antara kota dan desa.", "Perusahaan berupaya mengurangi ketimpangan ekonomi antara kota dan desa.", "Pemerintah berupaya mengurangi perbedaan budaya antara kota dan desa."],
+  },
+  {
+    level: "B", ind: "Investasi di bidang pendidikan sangat penting untuk pembangunan berkelanjutan.", jp: "教育分野への投資は持続可能な発展のためにとても重要です。",
+    jpX: ["教育分野への投資は持続可能な発展のためにあまり重要ではありません。", "医療分野への投資は持続可能な発展のためにとても重要です。", "教育分野への支出は減らされるべきです。"],
+    indX: ["Investasi di bidang pendidikan kurang penting untuk pembangunan berkelanjutan.", "Investasi di bidang kesehatan sangat penting untuk pembangunan berkelanjutan.", "Pengeluaran di bidang pendidikan harus dikurangi."],
+  },
+  {
+    level: "B", ind: "Kebijakan baru itu menimbulkan dampak besar terhadap dunia usaha.", jp: "その新政策はビジネス界に大きな影響を与えました。",
+    jpX: ["その新政策はビジネス界にほとんど影響を与えませんでした。", "その古い政策はビジネス界に大きな影響を与えました。", "その新政策は教育界に大きな影響を与えました。"],
+    indX: ["Kebijakan baru itu hampir tidak berdampak terhadap dunia usaha.", "Kebijakan lama itu menimbulkan dampak besar terhadap dunia usaha.", "Kebijakan baru itu menimbulkan dampak besar terhadap dunia pendidikan."],
+  },
 ];
 
 /* 並べ替え（chunksが正しい順） */
@@ -283,10 +339,17 @@ function makeAffixQ(g) {
 
 function makeTransQ(s, dir, all) {
   const key = dir === "ij" ? "jp" : "ind";
+  const wrongKey = dir === "ij" ? "jpX" : "indX";
   const correct = s[key];
-  let cand = all.filter((x) => x !== s && x.level === s.level);
-  if (cand.length < 3) cand = all.filter((x) => x !== s);
-  const distract = sample(cand, 3).map((x) => x[key]);
+  let distract;
+  if (Array.isArray(s[wrongKey]) && s[wrongKey].length >= 3) {
+    // ひっかけ選択肢（主語・時制・反対語などが微妙に違う文）
+    distract = sample(s[wrongKey], 3);
+  } else {
+    let cand = all.filter((x) => x !== s && x.level === s.level);
+    if (cand.length < 3) cand = all.filter((x) => x !== s);
+    distract = sample(cand, 3).map((x) => x[key]);
+  }
   return {
     kind: "trans", level: s.level,
     prompt: dir === "ij" ? s.ind : s.jp,
@@ -566,6 +629,38 @@ function sheetCsvUrl(url) {
 }
 
 const LV_NUM = { E: "1", D: "2", C: "3", B: "4" };
+
+/* 文法シートのCSV → 文法問題
+   列：A=問題文(空欄は___), B=日本語訳, C=正解, D=ダミー1, E=ダミー2, F=ダミー3, G=解説(任意), H=レベル(任意 1〜4) */
+function grammarCsvToItems(text) {
+  const rows = parseCsv(text);
+  const items = [];
+  let skipped = 0;
+  const headerRe = /問題|訳|正解|ダミー|解説|レベル|question|answer|level/i;
+  const lvMap = { "1": "E", "2": "D", "3": "C", "4": "B", E: "E", D: "D", C: "C", B: "B" };
+  for (const cols of rows) {
+    const q = (cols[0] || "").trim();
+    const hint = (cols[1] || "").trim();
+    const answer = (cols[2] || "").trim();
+    const d1 = (cols[3] || "").trim();
+    const d2 = (cols[4] || "").trim();
+    const d3 = (cols[5] || "").trim();
+    const exp = (cols[6] || "").trim();
+    const lvRaw = (cols[7] || "").trim().toUpperCase();
+    if (!q || !hint || !answer || !d1) { if (q || hint || answer) skipped++; continue; }
+    if (headerRe.test(q) && headerRe.test(answer)) { skipped++; continue; }
+    const choices = [answer, d1];
+    if (d2) choices.push(d2);
+    if (d3) choices.push(d3);
+    items.push({
+      id: uid(), level: lvMap[lvRaw] || "E",
+      q, hint, choices, answer,
+      exp: exp || `正解：${answer}`,
+      custom: true, fromSheet: true,
+    });
+  }
+  return { items, skipped };
+}
 
 /* ================= スタイル ================= */
 
@@ -975,10 +1070,11 @@ function AdminLogin({ admin, onSuccess, onBack }) {
 
 /* ================= 画面：問題管理 ================= */
 
-function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onImportJson, onRemove, onBack, storageOk, sheetConfig, onSaveSheetConfig, onSyncSheet, sheetStatus, sheetCount }) {
+function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, onImport, onImportJson, onRemove, onBack, storageOk, sheetConfig, onSaveSheetConfig, onSyncSheet, sheetStatus, sheetCounts }) {
   const [tab, setTab] = useState("import");
-  const [sheetUrl, setSheetUrl] = useState(sheetConfig.url || "");
-  const [sheetTarget, setSheetTarget] = useState(sheetConfig.target || "vocab");
+  const [vocabUrl, setVocabUrl] = useState(sheetConfig.vocabUrl || "");
+  const [phraseUrl, setPhraseUrl] = useState(sheetConfig.phraseUrl || "");
+  const [grammarUrl, setGrammarUrl] = useState(sheetConfig.grammarUrl || "");
   const [sheetBusy, setSheetBusy] = useState(false);
   const [backupMsg, setBackupMsg] = useState("");
   const [copyMsg, setCopyMsg] = useState("");
@@ -1078,15 +1174,15 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
   /* ---- Googleスプレッドシート自動同期の設定 ---- */
   const doSheetSave = async () => {
     setSheetBusy(true);
-    await onSaveSheetConfig({ url: sheetUrl.trim(), target: sheetTarget, auto: true });
+    await onSaveSheetConfig({
+      vocabUrl: vocabUrl.trim(),
+      phraseUrl: phraseUrl.trim(),
+      grammarUrl: grammarUrl.trim(),
+      auto: true,
+    });
     setSheetBusy(false);
   };
 
-  const doSheetSync = async () => {
-    setSheetBusy(true);
-    await onSyncSheet();
-    setSheetBusy(false);
-  };
 
   /* ---- シートへ書き戻す（コピー） ---- */
   const doCopyTsv = async (target) => {
@@ -1247,38 +1343,39 @@ function Manage({ custom, pools, admin, onSaveAdmin, onAddWord, onAddGrammar, on
           <div className="slm-card" style={{ marginTop: 14 }}>
             <div style={{ fontWeight: 900, fontSize: 15 }}>📗 Googleシート自動同期（全端末で共通）</div>
             <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--muted)", marginTop: 8 }}>
-              ここで設定したシートを、<b style={{ color: "var(--ink)" }}>アプリを開くたびに自動で読み込みます</b>。シートに単語を追加すれば、パソコンでもスマホでも次に開いたとき同じ単語が使えるよ。シートが「みんな共通の単語帳」になるイメージ！<br />
-              <b style={{ color: "var(--ink)" }}>準備：</b>シートの「共有」→「リンクを知っている全員：<b style={{ color: "var(--ink)" }}>閲覧者</b>」<br />
-              <b style={{ color: "var(--ink)" }}>並び：</b>A列＝インドネシア語、B列＝日本語、C列＝レベル（1〜4、省略OK）
+              ここで設定したシートを、<b style={{ color: "var(--ink)" }}>アプリを開くたびに自動で読み込みます</b>。シートが「みんな共通の問題集」になるので、シートに追加すればパソコンでもスマホでも反映されるよ。<br />
+              <b style={{ color: "var(--ink)" }}>準備：</b>各シートの「共有」→「リンクを知っている全員：<b style={{ color: "var(--ink)" }}>閲覧者</b>」。同じスプレッドシート内の別タブ（シート）でもOK（タブを開いた状態のURLを貼ってね）。
             </div>
-            {sheetStatus && (
-              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 12, lineHeight: 1.7, color: sheetStatus.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>
-                {sheetStatus}{sheetStatus.startsWith("✅") ? "" : ""}
-              </div>
-            )}
-            <div className="slm-label">🔗 同期するシートのURL</div>
-            <input
-              className="slm-input" placeholder="https://docs.google.com/spreadsheets/d/…"
-              value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)}
-            />
-            <div className="slm-label">📥 シートの単語のあつかい</div>
-            <div className="slm-chip-row">
-              {[["vocab", "🍧 単語として出題"], ["phrases", "🍹 熟語・フレーズとして出題"]].map(([v, t]) => (
-                <button key={v} className={`slm-chip sm ${sheetTarget === v ? "on" : ""}`} onClick={() => setSheetTarget(v)}>{t}</button>
-              ))}
+
+            <div className="slm-label">🍧 単語シートのURL</div>
+            <div className="slm-note">列：A＝インドネシア語、B＝日本語、C＝レベル（1〜4、省略OK）</div>
+            <input className="slm-input" placeholder="https://docs.google.com/spreadsheets/d/…" value={vocabUrl} onChange={(e) => setVocabUrl(e.target.value)} />
+            {sheetStatus.vocab && <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6, lineHeight: 1.6, color: sheetStatus.vocab.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{sheetStatus.vocab}</div>}
+
+            <div className="slm-label">🍹 熟語・フレーズシートのURL（任意）</div>
+            <div className="slm-note">列：A＝インドネシア語、B＝日本語、C＝レベル（1〜4、省略OK）</div>
+            <input className="slm-input" placeholder="空欄なら使いません" value={phraseUrl} onChange={(e) => setPhraseUrl(e.target.value)} />
+            {sheetStatus.phrase && <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6, lineHeight: 1.6, color: sheetStatus.phrase.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{sheetStatus.phrase}</div>}
+
+            <div className="slm-label">🌿 文法問題シートのURL（任意）</div>
+            <div className="slm-note">
+              列：A＝問題文（空欄は ___ ）、B＝日本語訳、C＝正解、D＝ダミー1、E＝ダミー2、F＝ダミー3、G＝解説（省略OK）、H＝レベル（1〜4、省略OK）
             </div>
-            <div style={{ marginTop: 14 }}>
-              <button className="slm-btn teal sm" onClick={doSheetSave} disabled={sheetBusy || !sheetUrl.trim()}>
+            <input className="slm-input" placeholder="空欄なら使いません" value={grammarUrl} onChange={(e) => setGrammarUrl(e.target.value)} />
+            {sheetStatus.grammar && <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6, lineHeight: 1.6, color: sheetStatus.grammar.startsWith("✅") ? "var(--teal)" : "var(--pink-deep)" }}>{sheetStatus.grammar}</div>}
+
+            <div style={{ marginTop: 16 }}>
+              <button className="slm-btn teal sm" onClick={doSheetSave} disabled={sheetBusy}>
                 {sheetBusy ? "同期中…" : "この設定を保存して同期する 💾"}
               </button>
             </div>
             <div style={{ marginTop: 10 }}>
-              <button className="slm-ghost" onClick={doSheetSync} disabled={sheetBusy || !sheetConfig.url}>
-                🔄 いま手動で同期する（現在 {sheetCount} 件）
+              <button className="slm-ghost" onClick={async () => { setSheetBusy(true); await onSyncSheet(); setSheetBusy(false); }} disabled={sheetBusy}>
+                🔄 いま手動で同期する（単語{sheetCounts.vocab}・フレーズ{sheetCounts.phrase}・文法{sheetCounts.grammar}）
               </button>
             </div>
             <div className="slm-note" style={{ marginTop: 10 }}>
-              ※シート同期の単語はシートが本体なので、削除・修正はシート側で行ってね（アプリの登録済みリストからは消せません）。アプリ内で直接登録したマイ問題を他の端末へ移すときは、上のJSONバックアップを使ってね。
+              ※シート同期の問題はシートが本体なので、削除・修正はシート側で行ってね。アプリ内で直接登録したマイ問題を他の端末へ移すときは、上のJSONバックアップを使ってね。
             </div>
           </div>
 
@@ -1570,53 +1667,83 @@ export default function App() {
     }
   }, [custom, adminSettings, loaded, storageOk]);
 
-  /* ---- Googleシート自動同期 ---- */
-  const [sheetConfig, setSheetConfig] = useState({ url: DEFAULT_SHEET_URL, target: "vocab", auto: true });
+  /* ---- Googleシート自動同期（単語・フレーズ・文法の3シート対応） ---- */
+  const [sheetConfig, setSheetConfig] = useState({ vocabUrl: DEFAULT_SHEET_URL, phraseUrl: "", grammarUrl: "", auto: true });
   const [sheetWords, setSheetWords] = useState([]);
-  const [sheetStatus, setSheetStatus] = useState("");
+  const [sheetPhrases, setSheetPhrases] = useState([]);
+  const [sheetGrammar, setSheetGrammar] = useState([]);
+  const [sheetStatus, setSheetStatus] = useState({ vocab: "", phrase: "", grammar: "" });
   const [sheetLoaded, setSheetLoaded] = useState(false);
+
+  const fetchSheetText = async (url) => {
+    const csvUrl = sheetCsvUrl(url.trim());
+    if (!csvUrl) throw new Error("badurl");
+    const res = await fetch(csvUrl);
+    if (!res.ok) throw new Error("fetch");
+    const text = await res.text();
+    if (text.trim().startsWith("<")) throw new Error("private");
+    return text;
+  };
 
   const syncSheet = async (cfg) => {
     const c = cfg || sheetConfig;
-    if (!c.url || !c.url.trim()) {
-      setSheetWords([]);
-      setSheetStatus("");
-      return { ok: false, msg: "URLが設定されていません" };
-    }
-    const csvUrl = sheetCsvUrl(c.url.trim());
-    if (!csvUrl) {
-      setSheetStatus("⚠️ URLの形式が正しくないみたい");
-      return { ok: false, msg: "URLの形式が正しくない" };
-    }
-    setSheetStatus("同期中…⏳");
-    try {
-      const res = await fetch(csvUrl);
-      if (!res.ok) throw new Error("fetch failed");
-      const text = await res.text();
-      if (text.trim().startsWith("<")) throw new Error("not public");
-      const { items } = csvToItems(text);
-      const words = items.map((it) => ({ ...it, custom: true, fromSheet: true }));
-      setSheetWords(words);
-      const now = new Date();
-      const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-      setSheetStatus(`✅ シートと同期済み（${words.length}件・${t}）`);
-      return { ok: true, count: words.length };
-    } catch (e) {
-      setSheetStatus("⚠️ シートを読めませんでした。「共有」→「リンクを知っている全員：閲覧者」になっているか確認してね");
-      return { ok: false, msg: "読み込み失敗" };
-    }
+    const now = new Date();
+    const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const status = { vocab: "", phrase: "", grammar: "" };
+    const errMsg = (e) =>
+      e.message === "badurl"
+        ? "⚠️ URLの形式が正しくないみたい"
+        : "⚠️ 読めませんでした。「共有」→「リンクを知っている全員：閲覧者」か確認してね";
+
+    // 単語シート
+    if (c.vocabUrl && c.vocabUrl.trim()) {
+      try {
+        const { items } = csvToItems(await fetchSheetText(c.vocabUrl));
+        setSheetWords(items.map((it) => ({ ...it, custom: true, fromSheet: true })));
+        status.vocab = `✅ 同期済み ${items.length}件（${t}）`;
+      } catch (e) { setSheetWords([]); status.vocab = errMsg(e); }
+    } else setSheetWords([]);
+
+    // フレーズシート
+    if (c.phraseUrl && c.phraseUrl.trim()) {
+      try {
+        const { items } = csvToItems(await fetchSheetText(c.phraseUrl));
+        setSheetPhrases(items.map((it) => ({ ...it, custom: true, fromSheet: true })));
+        status.phrase = `✅ 同期済み ${items.length}件（${t}）`;
+      } catch (e) { setSheetPhrases([]); status.phrase = errMsg(e); }
+    } else setSheetPhrases([]);
+
+    // 文法シート
+    if (c.grammarUrl && c.grammarUrl.trim()) {
+      try {
+        const { items } = grammarCsvToItems(await fetchSheetText(c.grammarUrl));
+        setSheetGrammar(items);
+        status.grammar = `✅ 同期済み ${items.length}件（${t}）`;
+      } catch (e) { setSheetGrammar([]); status.grammar = errMsg(e); }
+    } else setSheetGrammar([]);
+
+    setSheetStatus(status);
   };
 
   // 起動時：保存された同期設定を読み込んで自動同期
   useEffect(() => {
-    let cfg = { url: DEFAULT_SHEET_URL, target: "vocab", auto: true };
+    let cfg = { vocabUrl: DEFAULT_SHEET_URL, phraseUrl: "", grammarUrl: "", auto: true };
     try {
       const raw = window.localStorage && window.localStorage.getItem(SHEET_KEY);
-      if (raw) cfg = { ...cfg, ...JSON.parse(raw) };
+      if (raw) {
+        const saved = JSON.parse(raw);
+        // 旧形式（url/target）からの引き継ぎ
+        if (saved.url && !saved.vocabUrl && !saved.phraseUrl) {
+          if (saved.target === "phrases") cfg = { ...cfg, vocabUrl: "", phraseUrl: saved.url };
+          else cfg = { ...cfg, vocabUrl: saved.url };
+        } else {
+          cfg = { ...cfg, ...saved };
+        }
+      }
     } catch (e) { /* 既定値を使用 */ }
     setSheetConfig(cfg);
     setSheetLoaded(true);
-    if (cfg.auto && cfg.url) syncSheet(cfg);
+    if (cfg.auto) syncSheet(cfg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1644,10 +1771,20 @@ export default function App() {
     return out;
   };
 
+  const mergeGrammar = (base, extra) => {
+    const seen = new Set(base.map((g) => `${g.q}|${g.answer}`));
+    const out = [...base];
+    for (const g of extra) {
+      const k = `${g.q}|${g.answer}`;
+      if (!seen.has(k)) { seen.add(k); out.push(g); }
+    }
+    return out;
+  };
+
   const pools = {
-    vocab: mergeWords([...VOCAB, ...custom.vocab], sheetConfig.target === "vocab" ? sheetWords : []),
-    grammar: [...GRAMMAR, ...custom.grammar],
-    phrases: mergeWords([...PHRASES, ...custom.phrases], sheetConfig.target === "phrases" ? sheetWords : []),
+    vocab: mergeWords([...VOCAB, ...custom.vocab], sheetWords),
+    grammar: mergeGrammar([...GRAMMAR, ...custom.grammar], sheetGrammar),
+    phrases: mergeWords([...PHRASES, ...custom.phrases], sheetPhrases),
   };
 
   const start = (questions, isMock, target) => {
@@ -1791,7 +1928,8 @@ export default function App() {
           onAddWord={addWord} onAddGrammar={addGrammar}
           onImport={importWords} onImportJson={importJson} onRemove={removeItem}
           sheetConfig={sheetConfig} onSaveSheetConfig={saveSheetConfig}
-          onSyncSheet={() => syncSheet()} sheetStatus={sheetStatus} sheetCount={sheetWords.length}
+          onSyncSheet={() => syncSheet()} sheetStatus={sheetStatus}
+          sheetCounts={{ vocab: sheetWords.length, phrase: sheetPhrases.length, grammar: sheetGrammar.length }}
           onBack={() => setScreen("home")}
         />
       )}
